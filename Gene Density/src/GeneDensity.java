@@ -17,8 +17,11 @@ column 10: name (use function to clean "" and ""; && everything after dash)
 public class GeneDensity {
    ArrayList<Isoform> isoforms = new ArrayList<Isoform>(); //place isoform objects here
    ArrayList<DNAFrag> nests = new ArrayList<DNAFrag>(); // place discovered nests here
-   ArrayList<DNAFrag> intergenicRegion = new ArrayList<DNAFrag>();
-   int nestedCount, nestedLength, nestedA, nestedT, nestedG, nestedC, nestedGC, nestedN;
+   int length, numA, numT, numG, numC, numGC, numN;
+   int nestedCount=0, nestedLength=0, nestedA, nestedT, nestedG, nestedC, nestedGC, nestedN;
+   int igCount=0, igLength=0, igA, igT, igG, igC, igGC, igN;
+   boolean isoformSorted = false;
+   String DNA;
 
    // put this into Record's genData function to get statistical calculations
    public static String extractRecordDNA(String dna, Record rec) {
@@ -58,7 +61,7 @@ public class GeneDensity {
     *                4: nested from iso1.stop to iso2.stop
     *                5: nested from iso2.start to iso1.stop
     *                6: iso1 is nested inside iso2
-     *                7: nested from iso2.start to iso1.stop
+    *                7: nested from iso2.start to iso1.stop
     *                8: nested from iso1.start to iso2.start
     *                9: iso2 is nested inside iso1
     *               10: nested from iso2.stop to iso1.stop
@@ -128,23 +131,78 @@ public class GeneDensity {
       return range;
    }
    
-   // we can't generate nested and intergenic at the same time in the /veryveryvery/ rare case where we have multiple nests involving the same few genes
-   public void genIntergenic() {
-      // generates intergenic regions and adds it to the arraylist
-      // need to sort Isoforms from lowest to highest and look at the gaps between neighbors.
-      // this function is going to pretend that overlaps don't happen, so stop is between another's start and stop, we ignore it.
+   // do an n^2 comparison of isoforms and find nested regions and store it as a DNAFrag in nests
+   // finds and calculates Nests/data
+   public void calcNests() {
+      // for each nested region, create a DNAFrag object, calculate the data, and then store it in the array list
+      for (int i = 0; i < isoforms.size()-1; i++) {
+         for (int n = 1; n < isoforms.size(); n++) {
+            int hint = isNested(isoforms.get(i), isoforms.get(n));
+            if (hint != 0) {
+               int[] startstop = nested(isoforms.get(i), isoforms.get(n), hint);
+               DNAFrag frag = new DNAFrag(startstop[0], startstop[1]);
+               frag.genData(extractFragDNA(DNA, frag));
+               nests.add(frag);
+            }   
+         }
+      }
    }
    
-//   intergenic region: sort list by smallest index (either start or stop)
+   // we can't generate nested and intergenic at the same time in the /veryveryvery/ rare case where we have multiple nests involving the same few genes
+   public void calcIntergenic() {
+      // need to sort Isoforms from lowest to highest and look at the gaps between neighbors.
+      // this function is going to pretend that overlaps don't happen, so stop is between another's start and stop, we ignore it.
+      // ignore the previous line....if there is an overlap, we would be able to fix that by adding in the nested regions
+      if (!isoformSorted)
+         sortIsoforms();
+      
+      igLength = length;
+      igA = numA;
+      igT = numT;
+      igG = numG;
+      igC = numC;
+      igGC = numGC;
+      igN = numN;
+      igCount = isoforms.size()+1; // there is a good chance that this logic is correct. if we really want to be accurate and test all cases, we should have two booleans in the main to verify start and stop location
+
+      for(Records exon: records) {
+         intronLength -= exon.length;
+         intronA -= exon.numA;
+         intronT -= exon.numT;
+         intronG -= exon.numG;
+         intronC -= exon.numC;
+         intronGC -= exon.numGC;
+         intronN -= exon.numN;
+      }
+      
+   }
+   
+   public void sortIsoforms() {
+      // some sorting happens here
+      isoformSorted = true;
+   }
+   
+   public void genData(String dna) {
+      length = dna.length();
+      numA = length - dna.replace("A", "").length();
+      numT = length - dna.replace("T", "").length();
+      numG = length - dna.replace("G", "").length();
+      numC = length - dna.replace("C", "").length();
+      numN = length - dna.replace("N", "").length();
+      numGC = numG + numC;
+   }
+   
 }
 
 class Isoform {//implements Comparable{
    ArrayList<Record> records = new ArrayList<Record>();
+   ArrayList<Record> exons = new ArrayList<Record>();
    int start;
    int stop;
-   boolean direction, genIntron = false, recordsSorted = false;
+   boolean direction, exonSorted = false;
    int length, numA, numT, numG, numC, numGC, numN;
-   int CDScount=0, CDSlength=0, exonCount=0, exonLength=0, intronCount=0, intronLength=0;
+   int intronCount, intronLength, intronA, intronT, intronG, intronC, intronGC, intronN;
+   int CDScount=0, CDSlength=0, exonCount=0, exonLength=0;
    
    public void setStart(int start) {
       this.start = start;
@@ -158,17 +216,34 @@ class Isoform {//implements Comparable{
       this.direction = direction;
    }
    
-   //these poor guys need to find their DNA
-   // --idea-- subtract each records from DNA to get intron total
-   // --idea-- genIntron would only get count and length
-   public void genIntrons() {
-      if (!recordsSorted)
-         sortRecords();
+   public void runAllDataCalc(String dna) {
+      genData(dna);
+      calcIntronData();
+      genRecordStat();
+   }
+   
+   public void calcIntronData() {
+      if (!exonSorted)
+         sortExons();
       
-      // generating and adding to records happen here
-      
-      genIntron = true;
-      recordsSorted = false;
+      intronLength = length;
+      intronA = numA;
+      intronT = numT;
+      intronG = numG;
+      intronC = numC;
+      intronGC = numGC;
+      intronN = numN;
+      intronCount = exons.size()-1;
+
+      for(Records exon: records) {
+         intronLength -= exon.length;
+         intronA -= exon.numA;
+         intronT -= exon.numT;
+         intronG -= exon.numG;
+         intronC -= exon.numC;
+         intronGC -= exon.numGC;
+         intronN -= exon.numN;
+      }
    }
    
    // data pertaining to the gene as a whole, not the Records
@@ -184,10 +259,6 @@ class Isoform {//implements Comparable{
    }
    
    public void genRecordStat() {
-      // make sure that introns were generated
-      if (!genIntron)
-         genIntrons();
-   
       for (Record rec: records) {
          if (rec.type == 3) {
             CDScount++;
@@ -195,18 +266,15 @@ class Isoform {//implements Comparable{
          } else if (rec.type == 4) {
             exonCount++;
             exonLength += rec.length;
-         } else if (rec.type == 5) {
-            intronCount++;
-            intronLength += rec.length;
          }
       }
    }
    
-   public void sortRecords() {
+   public void sortExons() {
       // some sorting happends here.
       // probably Collections.sort()
       
-      recordsSorted = true;
+      exonSorted = true;
    }
 }
 
@@ -214,7 +282,7 @@ class Record {//implements Comparable{
    String feature, isoform;
    int start, stop;
    boolean direction; // true = forward, false = backwards
-   int type = 0; //0: no type, 1: start, 2: stop, 3: CDS, 4: exon, 5: intron
+   int type = 0; //0: no type, 1: start, 2: stop, 3: CDS, 4: exon
    int length, numA, numT, numG, numC, numGC, numN;
    
    public Record(String feature, int start, int stop, boolean direction, String isoform) {
@@ -232,8 +300,6 @@ class Record {//implements Comparable{
          type = 3;
       else if (feature.equals("exon"))
          type = 4;
-      else if (feature.equals("intron"))
-         type = 5;
    }
    
    // assume that the dna string is pre-parsed using extractRecordDNA()
@@ -249,7 +315,7 @@ class Record {//implements Comparable{
    }
 }
 
-class DNAFrag{//implements Comparable{
+class DNAFrag {
    int start, stop;
    int length, numA, numT, numG, numC, numGC, numN;
    String iso1, iso2; // this is where we put either the two isoforms that are nested or the isoforms surrounding the intergenic region
