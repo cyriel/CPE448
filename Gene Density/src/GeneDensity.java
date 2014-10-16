@@ -19,10 +19,12 @@ public class GeneDensity {
    static ArrayList<Isoform> isoforms = new ArrayList<Isoform>(); //place isoform objects here
    static ArrayList<DNAFrag> nests = new ArrayList<DNAFrag>(); // place discovered nests here
    static int length, numA, numT, numG, numC, numGC, numN;
-   static int nestedCount=0, nestedLength=0, nestedA, nestedT, nestedG, nestedC, nestedGC, nestedN;
+   static int nestCount=0, nestLength=0, nestA=0, nestT=0, nestG=0, nestC=0, nestGC=0, nestN=0;
    static int igCount=0, igLength=0, igA, igT, igG, igC, igGC, igN;
+   static int upsCount=0, upsLength=0, upsA=0, upsT=0, upsG=0, upsC=0, upsGC=0, upsN=0;
    static boolean isoformSorted = false;
    static String DNA;
+   static int[] exon = new int[8], cds = new int[8], intron = new int[8], gene = new int[8];
    
    // need to implement a startOffset and an endOffset to handle searching through the GFF file for applicable ranges
    // this /could/ still allow upstream to be calculated at full distances
@@ -56,19 +58,7 @@ public class GeneDensity {
             String dna_fragment = DNA.substring(start,end);
             
             Scanner gff = new Scanner(new File(gfffile));
-            /*
-             * 1 class per isoform (cut off everything after dash)
-             *store list of isoform in arraylist
-             *
-             *Class Name: isoform
-             *Class Name: record
-             *column 3: feature
-             *column 4: start
-             *column 5: stop
-             *column 7: strand (boolean)
-             *column 10: name (use function to clean "" and ""; && everything after dash)
-             * 
-             */
+            
             Isoform isoform = new Isoform();
             while (gff.hasNextLine()) {
                String tempGFF = gff.nextLine();
@@ -89,6 +79,7 @@ public class GeneDensity {
                   isoform.name = isoName;
                else if (!isoform.name.equals(isoName)) { //add current isoform to ArrayList and create new isoform
                   isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
+                  calcUpsData(isoform, upstream);
                   isoforms.add(isoform);
                   isoform = new Isoform();
                   isoform.name = isoName;
@@ -103,20 +94,23 @@ public class GeneDensity {
                else if (record.feature.equals("stop_codon"))
                   isoform.stop = stopRec;
                else if (record.feature.equals("exon"))       // not really necessary, but don't want to chance a random feature name from getting input
-                  isoform.exons.add(record);
+               isoform.exons.add(record);
                isoform.direction = direction;
                isoform.records.add(record);
             }
             isoform.runAllDataCalc(DNA);
+            calcUpsData(isoform, upstream);
             isoforms.add(isoform); // after we finish parsing GFF file, we should still have one isoform left to add to array list
             
             genData(DNA);
             calcNests();
             calcIntergenic();
             
+            genCSVdata();
+            genCSVnests();
             // everything should be done calculating at this point
             // we need to output the data to a nice CSV (probably multiple to keep things organized)
-            // possible CSV files: RecordData, GeneData
+            // possible CSV files: GeneralData, GeneData
             // possible txt file: NestedGenes
 
             
@@ -129,6 +123,125 @@ public class GeneDensity {
       
    }
 
+   public static String toCSV(int[] input) {
+      String returned = "" + input[0];
+      for (int i = 1; i < input.length; i++)
+         returned += "," + input[i];
+      return returned;
+   }
+   
+   public static int[] updateArray(int[] array, Record rec) {
+      int[] returned = array;
+      returned[0]++;
+      returned[1] += rec.length;
+      returned[2] += rec.numA;
+      returned[3] += rec.numT;
+      returned[4] += rec.numG;
+      returned[5] += rec.numC;
+      returned[6] += rec.numGC;
+      returned[7] += rec.numN;
+      return returned;
+   }
+   
+   // simultaneously generate CSV data for genes and the records in the gene
+   public static void genCSVdata() {
+      File gen = new File("GeneralData.csv");
+      File iso = new File("GeneData.csv");
+      int[] geneData = new int[7];
+      try {
+         gen.createNewFile();
+         iso.createNewFile();
+         PrintWriter printerGen = new PrintWriter(new FileWriter(gen));
+         PrintWriter printerIso = new PrintWriter(new FileWriter(iso));
+         printerGen.println("Feature,Count,Length,%A,%T,%G,%C,%GC,%N");
+         printerIso.println("Gene,CDS Count,CDS Length,Exon Count,Exon Length,Intron Count,Intron Length,Gene Length");
+         for (Isoform isoform: isoforms) {
+            for (Record rec: isoform.records) {
+               if (rec.feature.equals("exon"))
+                  exon = updateArray(exon, rec);
+               else if (rec.feature.equals("CDS"))
+                  cds = updateArray(cds, rec);
+            }
+            for (int i = 0; i < 8; i++)
+               intron[i] += isoform.intron[i];
+            gene[0]++;
+            gene[1] += isoform.length;
+            gene[2] += isoform.numA;
+            gene[3] += isoform.numT;
+            gene[4] += isoform.numG;
+            gene[5] += isoform.numC;
+            gene[6] += isoform.numGC;
+            gene[7] += isoform.numN;
+            
+            geneData[0] += isoform.CDScount;
+            geneData[1] += isoform.CDSlength;
+            geneData[2] += isoform.exonCount;
+            geneData[3] += isoform.exonLength;
+            geneData[4] += isoform.intronCount;
+            geneData[5] += isoform.intronLength;
+            geneData[6] += isoform.length;
+            
+            printerIso.println(isoform.name+","+isoform.CDScount+","+isoform.CDSlength+","+isoform.exonCount+","+isoform.exonLength+","+isoform.intronCount+","+isoform.intronLength+","+isoform.length);
+         }
+         printerGen.println("Exons,"+exons[0]);
+         printerGen.println();
+         printerGen.println();
+         printerGen.println();
+         printerGen.println();
+         printerGen.println();
+         printerGen.close();
+         for (int i = 0; i < 7; i++)
+            geneData[i] = 1.0*geneData[i]/isoforms.size();
+         printerIso.println("AVERAGE",geneData[0],geneData[1],geneData[2],geneData[3],geneData[4],geneData[5],geneData[6]);
+         printerIso.close();
+      } catch (IOException e) {
+         System.err.println("IO error occured");
+      }
+
+   }
+   
+   public static void genCSVnests() {
+      File out = new File("nests.csv");
+      try {
+         out.createNewFile();
+         FileWriter writer = new FileWriter(out);
+         PrintWriter printer = new PrintWriter(writer);
+         if (nests.size() == 0)
+            printer.println("No nested genes were found");
+         else {
+            printer.println("Isoform 1,Isoform 2,Start,Stop");
+            for (int i = 0; i < nests.size(); i++)
+               printer.println(nests.get(i).toCSV());
+         }
+         printer.close();
+      } catch (IOException e) {
+         System.err.println("IO error occured");
+      }
+   }
+   
+   public static void calcUpsData(Isoform iso, int size) {
+      int start;
+      if (iso.direction) {
+         start = iso.start - size;
+         if (start < 0) start = 0;
+      } else {
+         start = iso.start + size;
+         if (start > DNA.length()) start = DNA.length();
+      }
+      DNAFrag frag = new DNAFrag(start, iso.start);
+      frag.genData(extractFragDNA(DNA, frag));
+      if (frag.length > 0) {
+         upsCount++;
+         upsLength += frag.length;
+         upsA += frag.numA;
+         upsT += frag.numT;
+         upsG += frag.numG;
+         upsC += frag.numC;
+         upsGC += frag.numGC;
+         upsN += frag.numN;
+      }
+   }
+   
    // put this into Record's genData function to get statistical calculations
    public static String extractRecordDNA(String dna, Record rec) {
       return rec.direction ? dna.substring(rec.start,rec.stop) : reverseComplement(dna.substring(rec.stop,rec.start));
@@ -241,17 +354,26 @@ public class GeneDensity {
    // finds and calculates Nests/data
    public static void calcNests() {
       // for each nested region, create a DNAFrag object, calculate the data, and then store it in the array list
-      for (int i = 0; i < isoforms.size()-1; i++) {
+      for (int i = 0; i < isoforms.size()-1; i++)
          for (int n = 1; n < isoforms.size(); n++) {
             int hint = isNested(isoforms.get(i), isoforms.get(n));
             if (hint != 0) {
                int[] startstop = nested(isoforms.get(i), isoforms.get(n), hint);
                DNAFrag frag = new DNAFrag(startstop[0], startstop[1]);
                frag.genData(extractFragDNA(DNA, frag));
+               frag.iso1 = isoforms.get(i).name;
+               frag.iso2 = isoforms.get(n).name;
+               nestLength += frag.length;
+               nestA += frag.numA;
+               nestT += frag.numT;
+               nestG += frag.numG;
+               nestC += frag.numC;
+               nestGC += frag.numGC;
+               nestN += frag.numN;
                nests.add(frag);
-            }   
+            }
          }
-      }
+      nestCount=nests.size();
    }
    
    // we can't generate nested and intergenic at the same time in the /veryveryvery/ rare case where we have multiple nests involving the same few genes
@@ -308,8 +430,8 @@ class Isoform implements Comparable<Isoform>{
    int stop;
    boolean direction, exonSorted = false;
    int length, numA, numT, numG, numC, numGC, numN;
-   int intronCount, intronLength, intronA, intronT, intronG, intronC, intronGC, intronN;
-   int CDScount=0, CDSlength=0, exonCount=0, exonLength=0;
+   int[] intron = new int[8];
+   int CDScount=0, CDSlength=0, exonCount=0, exonLength=0, intronCount, intronLength;
    
    public void runAllDataCalc(String dna) {
       genData(dna);
@@ -328,24 +450,25 @@ class Isoform implements Comparable<Isoform>{
       if (!exonSorted)
          sortExons();
       
-      intronLength = length;
-      intronA = numA;
-      intronT = numT;
-      intronG = numG;
-      intronC = numC;
-      intronGC = numGC;
-      intronN = numN;
-      intronCount = exons.size()-1;
+      intron[0] = intronCount = exons.size()-1;
+      intron[1] = length;
+      intron[2] = numA;
+      intron[3] = numT;
+      intron[4] = numG;
+      intron[5] = numC;
+      intron[6] = numGC;
+      intron[7] = numN;
 
       for(Record exon: records) {
-         intronLength -= exon.length;
-         intronA -= exon.numA;
-         intronT -= exon.numT;
-         intronG -= exon.numG;
-         intronC -= exon.numC;
-         intronGC -= exon.numGC;
-         intronN -= exon.numN;
+         intron[1] -= exon.length;
+         intron[2] -= exon.numA;
+         intron[3] -= exon.numT;
+         intron[4] -= exon.numG;
+         intron[5] -= exon.numC;
+         intron[6] -= exon.numGC;
+         intron[7] -= exon.numN;
       }
+      intronLength = intron[1];
    }
    
    // data pertaining to the gene as a whole, not the Records
@@ -431,6 +554,10 @@ class DNAFrag {
    public DNAFrag(int start, int stop) {
       this.start = start;
       this.stop = stop;
+   }
+   
+   public String toCSV() {
+      return iso1 + "," + iso2 + "," + start + "," + stop;
    }
    
    // assume that the dna string is pre-parsed using extractFragDNA()
