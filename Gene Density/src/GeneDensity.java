@@ -66,14 +66,15 @@ public class GeneDensity {
                parser.next();
                parser.next();
                String feature = parser.next();
-               int startRec = parser.nextInt();
+               int startRec = parser.nextInt()-1;
                int stopRec = parser.nextInt();
                parser.next();
                boolean direction = parser.next().charAt(0) == '+' ? true: false;
                parser.next();
                parser.next();
                String isoName = parser.next();
-               isoName = isoName.substring(2,isoName.indexOf('-'));
+               isoName.replace("\"","");
+               isoName = isoName.substring(0,isoName.indexOf('-'));
                
                if (isoform.name == "")    // initialization of isoform object
                   isoform.name = isoName;
@@ -81,24 +82,33 @@ public class GeneDensity {
                   isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
                   calcUpsData(isoform, upstream);
                   isoforms.add(isoform);
+                  System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
                   isoform = new Isoform();
                   isoform.name = isoName;
                }
                // there is no else needed because the current isoform is still current (tautological?)
                
                Record record = new Record(feature, startRec, stopRec, direction, isoName);
+               System.out.println(record.isoform + " " + record.feature);
                record.genData(extractRecordDNA(DNA,record));
                
                if (record.feature.equals("start_codon"))
-                  isoform.start = startRec;
+                  if (direction)
+                     isoform.start = startRec;
+                  else
+                     isoform.stop = stopRec;
                else if (record.feature.equals("stop_codon"))
-                  isoform.stop = stopRec;
+                  if (direction)
+                     isoform.stop = stopRec;
+                  else
+                     isoform.start = startRec;
                else if (record.feature.equals("exon"))       // not really necessary, but don't want to chance a random feature name from getting input
-               isoform.exons.add(record);
+                  isoform.exons.add(record);
                isoform.direction = direction;
                isoform.records.add(record);
             }
-            isoform.runAllDataCalc(DNA);
+            isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
+            System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
             calcUpsData(isoform, upstream);
             isoforms.add(isoform); // after we finish parsing GFF file, we should still have one isoform left to add to array list
             
@@ -217,14 +227,16 @@ public class GeneDensity {
    
    public static void calcUpsData(Isoform iso, int size) {
       int start;
+      DNAFrag frag;
       if (iso.direction) {
          start = iso.start - size;
          if (start < 0) start = 0;
+         frag = new DNAFrag(start, iso.start);
       } else {
-         start = iso.start + size;
+         start = iso.stop + size;
          if (start > DNA.length()) start = DNA.length();
+         frag = new DNAFrag(iso.stop, start);
       }
-      DNAFrag frag = new DNAFrag(start, iso.start);
       frag.genData(extractFragDNA(DNA, frag));
       if (frag.length > 0) {
          upsCount++;
@@ -240,7 +252,8 @@ public class GeneDensity {
    
    // put this into Record's genData function to get statistical calculations
    public static String extractRecordDNA(String dna, Record rec) {
-      return rec.direction ? dna.substring(rec.start,rec.stop) : reverseComplement(dna.substring(rec.stop,rec.start));
+      String temp = dna.substring(rec.start, rec.stop);
+      return rec.direction ? temp : reverseComplement(temp);
    }
    
    // this is here just because of the other ones. gotta keep things looking organized
@@ -250,23 +263,26 @@ public class GeneDensity {
    
    // not sure what this should be used for yet
    public static String extractGeneDNA(String dna, Isoform iso) {
-      return iso.direction ? dna.substring(iso.start, iso.stop) : reverseComplement(dna.substring(iso.stop, iso.start));
+      String temp = dna.substring(iso.start, iso.stop);
+//      System.out.println(iso.start + " " + iso.stop + " " + temp.length() + " "  + reverseComplement(temp).length());
+      return iso.direction ? temp : reverseComplement(temp);
    }
    
    // gets the reverse complement of a dna string. useful when the gene is written reversed
    public static String reverseComplement(String dna) {
       char[] reverse = new StringBuilder(dna).reverse().toString().toCharArray();
+      String revCom = "";
       for (int i = 0; i<reverse.length; i++) {
          if (reverse[i] == 'A')
-            reverse[i] = 'T';
+            revCom += 'T';
          else if (reverse[i] == 'T')
-            reverse[i] = 'A';
+            revCom += 'A';
          else if (reverse[i] == 'G')
-            reverse[i] = 'C';
+            revCom += 'C';
          else if (reverse[i] == 'C')
-            reverse[i] = 'G';
+            revCom += 'G';
       }
-      return reverse.toString();
+      return revCom;
    }
    
    /* return values: 0: no nesting
