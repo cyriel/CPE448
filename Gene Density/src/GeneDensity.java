@@ -25,11 +25,11 @@ public class GeneDensity {
    static boolean isoformSorted = false;
    static String DNA;
    static int[] exon = new int[8], cds = new int[8], intron = new int[8], gene = new int[8];
+   static int start = 1, upstream = 0, end = -1;    // default start, stop, and upstream values
    
    // need to implement a startOffset and an endOffset to handle searching through the GFF file for applicable ranges
    // this /could/ still allow upstream to be calculated at full distances
    public static void main(String[] args) {
-      int start = 1, upstream = 0, end = -1;    // default start, stop, and upstream values
       String config = "config.txt";
       Scanner parser;
       try {
@@ -108,11 +108,6 @@ public class GeneDensity {
             
             genCSVdata();
             genCSVnests();
-            // everything should be done calculating at this point
-            // we need to output the data to a nice CSV (probably multiple to keep things organized)
-            // possible CSV files: GeneralData, GeneData
-            // possible txt file: NestedGenes
-
             
          } catch (FileNotFoundException e) {
             System.err.println("Input file not found");
@@ -147,7 +142,7 @@ public class GeneDensity {
    public static void genCSVdata() {
       File gen = new File("GeneralData.csv");
       File iso = new File("GeneData.csv");
-      int[] geneData = new int[7];
+      double[] geneData = new double[7];
       try {
          gen.createNewFile();
          iso.createNewFile();
@@ -183,16 +178,17 @@ public class GeneDensity {
             
             printerIso.println(isoform.name+","+isoform.CDScount+","+isoform.CDSlength+","+isoform.exonCount+","+isoform.exonLength+","+isoform.intronCount+","+isoform.intronLength+","+isoform.length);
          }
-         printerGen.println("Exons,"+exons[0]);
-         printerGen.println();
-         printerGen.println();
-         printerGen.println();
-         printerGen.println();
-         printerGen.println();
+         printerGen.println("Exons,"+exon[0]+","+exon[1]+","+(double)exon[2]/exon[1]+","+(double)exon[3]/exon[1]+","+(double)exon[4]/exon[1]+","+(double)exon[5]/exon[1]+","+(double)exon[6]/exon[1]+","+(double)exon[7]/exon[1]);
+         printerGen.println("CDS,"+cds[0]+","+cds[1]+","+(double)cds[2]/cds[1]+","+(double)cds[3]/cds[1]+","+(double)cds[4]/cds[1]+","+(double)cds[5]/cds[1]+","+(double)cds[6]/cds[1]+","+(double)cds[7]/cds[1]);
+         printerGen.println("Intron,"+intron[0]+","+intron[1]+","+(double)intron[2]/intron[1]+","+(double)intron[3]/intron[1]+","+(double)intron[4]/intron[1]+","+(double)intron[5]/intron[1]+","+(double)intron[6]/intron[1]+","+(double)intron[7]/intron[1]);
+         printerGen.println("Intergenic Regions,"+igCount+","+igLength+","+(double)igA/igLength+","+(double)igT/igLength+","+(double)igG/igLength+","+(double)igC/igLength+","+(double)igGC/igLength+","+(double)igN/igLength);
+         printerGen.println("Genes,"+gene[0]+","+gene[1]+","+(double)gene[2]/gene[1]+","+(double)gene[3]/gene[1]+","+(double)gene[4]/gene[1]+","+(double)gene[5]/gene[1]+","+(double)gene[6]/gene[1]+","+(double)gene[7]/gene[1]);
+         printerGen.println("Upstream (" + upstream + " b),"+upsCount+","+upsLength+","+(double)upsA/upsLength+","+(double)upsT/upsLength+","+(double)upsG/upsLength+","+(double)upsC/upsLength+","+(double)upsGC/upsLength+","+(double)upsN/upsLength);
+         printerGen.println("Nested Genes,"+nestCount+","+nestLength+","+(double)nestA/nestLength+","+(double)nestT/nestLength+","+(double)nestG/nestLength+","+(double)nestC/nestLength+","+(double)nestGC/nestLength+","+(double)nestN/nestLength);
          printerGen.close();
          for (int i = 0; i < 7; i++)
             geneData[i] = 1.0*geneData[i]/isoforms.size();
-         printerIso.println("AVERAGE",geneData[0],geneData[1],geneData[2],geneData[3],geneData[4],geneData[5],geneData[6]);
+         printerIso.println("AVERAGE"+","+geneData[0]+","+geneData[1]+","+geneData[2]+","+geneData[3]+","+geneData[4]+","+geneData[5]+","+geneData[6]);
          printerIso.close();
       } catch (IOException e) {
          System.err.println("IO error occured");
