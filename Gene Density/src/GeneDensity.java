@@ -73,7 +73,7 @@ public class GeneDensity {
                parser.next();
                parser.next();
                String isoName = parser.next();
-               isoName.replace("\"","");
+               isoName = isoName.replace("\"","");
                isoName = isoName.substring(0,isoName.indexOf('-'));
                
                if (isoform.name == "")    // initialization of isoform object
@@ -82,14 +82,14 @@ public class GeneDensity {
                   isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
                   calcUpsData(isoform, upstream);
                   isoforms.add(isoform);
-                  System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
+//                  System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
                   isoform = new Isoform();
                   isoform.name = isoName;
                }
                // there is no else needed because the current isoform is still current (tautological?)
                
                Record record = new Record(feature, startRec, stopRec, direction, isoName);
-               System.out.println(record.isoform + " " + record.feature);
+//               System.out.println(record.isoform + " " + record.feature);
                record.genData(extractRecordDNA(DNA,record));
                
                if (record.feature.equals("start_codon"))
@@ -108,7 +108,7 @@ public class GeneDensity {
                isoform.records.add(record);
             }
             isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
-            System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
+//            System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
             calcUpsData(isoform, upstream);
             isoforms.add(isoform); // after we finish parsing GFF file, we should still have one isoform left to add to array list
             
@@ -345,7 +345,7 @@ public class GeneDensity {
       else if (hint == 5)
          range = new int[] {iso2.start,iso1.stop};
       else if (hint == 3 || hint == 6)
-         range = (iso1.direction) ? new int[] {iso1.start,iso1.stop} : new int[] {iso1.stop, iso1.start};
+         range = new int[] {iso1.start,iso1.stop};
       else if (hint == 7)
          range = new int[] {iso2.start,iso1.stop};
       else if (hint == 8)
@@ -355,7 +355,7 @@ public class GeneDensity {
       else if (hint == 11)
          range = new int[] {iso1.start,iso2.stop};
       else if (hint == 9 || hint == 12)
-         range = (iso2.direction) ? new int[] {iso2.start,iso2.stop} : new int[] {iso2.stop, iso2.start};
+         range = new int[] {iso2.start,iso2.stop};
       else
          range = new int[] {0,0};
          
@@ -372,6 +372,8 @@ public class GeneDensity {
             if (hint != 0) {
                int[] startstop = nested(isoforms.get(i), isoforms.get(n), hint);
                DNAFrag frag = new DNAFrag(startstop[0], startstop[1]);
+//               System.out.println(isoforms.get(i).name + "\t" + isoforms.get(n).name);
+//               System.out.println(hint + "\t" + startstop[0] + "\t" + startstop[1]);
                frag.genData(extractFragDNA(DNA, frag));
                frag.iso1 = isoforms.get(i).name;
                frag.iso2 = isoforms.get(n).name;
