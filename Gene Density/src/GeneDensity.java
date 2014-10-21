@@ -188,13 +188,13 @@ public class GeneDensity {
             
             printerIso.println(isoform.name+","+isoform.CDScount+","+isoform.CDSlength+","+isoform.exonCount+","+isoform.exonLength+","+isoform.intronCount+","+isoform.intronLength+","+isoform.length);
          }
-         printerGen.println("Exons,"+exon[0]+","+exon[1]+","+(double)exon[2]/exon[1]+","+(double)exon[3]/exon[1]+","+(double)exon[4]/exon[1]+","+(double)exon[5]/exon[1]+","+(double)exon[6]/exon[1]+","+(double)exon[7]/exon[1]);
-         printerGen.println("CDS,"+cds[0]+","+cds[1]+","+(double)cds[2]/cds[1]+","+(double)cds[3]/cds[1]+","+(double)cds[4]/cds[1]+","+(double)cds[5]/cds[1]+","+(double)cds[6]/cds[1]+","+(double)cds[7]/cds[1]);
-         printerGen.println("Intron,"+intron[0]+","+intron[1]+","+(double)intron[2]/intron[1]+","+(double)intron[3]/intron[1]+","+(double)intron[4]/intron[1]+","+(double)intron[5]/intron[1]+","+(double)intron[6]/intron[1]+","+(double)intron[7]/intron[1]);
-         printerGen.println("Intergenic Regions,"+igCount+","+igLength+","+(double)igA/igLength+","+(double)igT/igLength+","+(double)igG/igLength+","+(double)igC/igLength+","+(double)igGC/igLength+","+(double)igN/igLength);
-         printerGen.println("Genes,"+gene[0]+","+gene[1]+","+(double)gene[2]/gene[1]+","+(double)gene[3]/gene[1]+","+(double)gene[4]/gene[1]+","+(double)gene[5]/gene[1]+","+(double)gene[6]/gene[1]+","+(double)gene[7]/gene[1]);
-         printerGen.println("Upstream (" + upstream + " b),"+upsCount+","+upsLength+","+(double)upsA/upsLength+","+(double)upsT/upsLength+","+(double)upsG/upsLength+","+(double)upsC/upsLength+","+(double)upsGC/upsLength+","+(double)upsN/upsLength);
-         printerGen.println("Nested Genes,"+nestCount+","+nestLength+","+(double)nestA/nestLength+","+(double)nestT/nestLength+","+(double)nestG/nestLength+","+(double)nestC/nestLength+","+(double)nestGC/nestLength+","+(double)nestN/nestLength);
+         printerGen.println("Exons,"+exon[0]+","+exon[1]+","+100.0*exon[2]/exon[1]+","+100.0*exon[3]/exon[1]+","+100*exon[4]/exon[1]+","+100*exon[5]/exon[1]+","+100*exon[6]/exon[1]+","+100*exon[7]/exon[1]);
+         printerGen.println("CDS,"+cds[0]+","+cds[1]+","+100*cds[2]/cds[1]+","+100*cds[3]/cds[1]+","+100*cds[4]/cds[1]+","+100*cds[5]/cds[1]+","+100*cds[6]/cds[1]+","+100*cds[7]/cds[1]);
+         printerGen.println("Intron,"+intron[0]+","+intron[1]+","+100*intron[2]/intron[1]+","+100*intron[3]/intron[1]+","+100*intron[4]/intron[1]+","+100*intron[5]/intron[1]+","+100*intron[6]/intron[1]+","+100*intron[7]/intron[1]);
+         printerGen.println("Intergenic Regions,"+igCount+","+igLength+","+100*igA/igLength+","+100*igT/igLength+","+100*igG/igLength+","+100*igC/igLength+","+100*igGC/igLength+","+100*igN/igLength);
+         printerGen.println("Genes,"+gene[0]+","+gene[1]+","+100*gene[2]/gene[1]+","+100*gene[3]/gene[1]+","+100*gene[4]/gene[1]+","+100*gene[5]/gene[1]+","+100*gene[6]/gene[1]+","+100*gene[7]/gene[1]);
+         printerGen.println("Upstream (" + upstream + " b),"+upsCount+","+upsLength+","+100*upsA/upsLength+","+100*upsT/upsLength+","+100*upsG/upsLength+","+100*upsC/upsLength+","+100*upsGC/upsLength+","+100*upsN/upsLength);
+         printerGen.println("Nested Genes,"+nestCount+","+nestLength+","+100*nestA/nestLength+","+100*nestT/nestLength+","+100*nestG/nestLength+","+100*nestC/nestLength+","+100*nestGC/nestLength+","+100*nestN/nestLength);
          printerGen.close();
          for (int i = 0; i < 7; i++)
             geneData[i] = 1.0*geneData[i]/isoforms.size();
