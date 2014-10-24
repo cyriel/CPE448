@@ -76,6 +76,7 @@ public class GeneDensity {
                parser.next();
                String isoName = parser.next();
                isoName = isoName.replace("\"","");
+               isoName = isoName.replace(";","");
 //               isoName = isoName.substring(0,isoName.indexOf('-'));
                if (!(startRec < 0 || stopRec > end - start)) {
                   if (isoform.name == "")    // initialization of isoform object
