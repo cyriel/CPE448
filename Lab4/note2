@@ -53,7 +53,7 @@ final class StrnCnt {
    final String str;
    final int count;
    
-   public Strnlen(String str, int count) {
+   public StrnCnt(String str, int count) {
       this.str = str;
       this.count = count;
    }
