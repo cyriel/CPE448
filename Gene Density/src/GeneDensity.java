@@ -53,9 +53,11 @@ public class GeneDensity {
             DNA = "";     // initialize dna string
             while (fasta.hasNextLine())
                DNA += fasta.nextLine();
+//            System.out.println(DNA.length());
             if (end == -1)
                end = DNA.length();
-            String dna_fragment = DNA.substring(start,end);
+            else
+               DNA = DNA.substring(start,end);
             
             Scanner gff = new Scanner(new File(gfffile));
             
@@ -66,52 +68,60 @@ public class GeneDensity {
                parser.next();
                parser.next();
                String feature = parser.next();
-               int startRec = parser.nextInt()-1;
-               int stopRec = parser.nextInt();
+               int startRec = parser.nextInt()-1-start;
+               int stopRec = parser.nextInt()-start;
                parser.next();
                boolean direction = parser.next().charAt(0) == '+' ? true: false;
                parser.next();
                parser.next();
                String isoName = parser.next();
                isoName = isoName.replace("\"","");
-               isoName = isoName.substring(0,isoName.indexOf('-'));
-               
-               if (isoform.name == "")    // initialization of isoform object
-                  isoform.name = isoName;
-               else if (!isoform.name.equals(isoName)) { //add current isoform to ArrayList and create new isoform
-                  isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
-                  calcUpsData(isoform, upstream);
-                  isoforms.add(isoform);
-//                  System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
-                  isoform = new Isoform();
-                  isoform.name = isoName;
+//               isoName = isoName.substring(0,isoName.indexOf('-'));
+               if (!(startRec < 0 || stopRec > end - start)) {
+                  if (isoform.name == "")    // initialization of isoform object
+                     isoform.name = isoName;
+                  else if (!isoform.name.substring(0,isoform.name.indexOf('-')).equals(isoName.substring(0,isoName.indexOf('-')))) { //add current isoform to ArrayList and create new isoform
+                     if (isoform.start >= 0 && isoform.stop >=0) { // dump isoforms without a start and a stop
+                        isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
+                        calcUpsData(isoform, upstream);
+                        isoforms.add(isoform);
+      //                  System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
+                     }
+                     isoform = new Isoform();
+                     isoform.name = isoName;
+                  }
+                  // there is no else needed because the current isoform is still current (tautological?)
+                  
+                  if (isoform.name.equals(isoName)) {
+                     Record record = new Record(feature, startRec, stopRec, direction, isoName);
+      //               System.out.println(record.isoform + " " + record.feature);
+                     record.genData(extractRecordDNA(DNA,record));
+                     
+                     if (record.feature.equals("start_codon"))
+                        if (direction)
+                           isoform.start = startRec;
+                        else
+                           isoform.stop = stopRec;
+                     else if (record.feature.equals("stop_codon"))
+                        if (direction)
+                           isoform.stop = stopRec;
+                        else
+                           isoform.start = startRec;
+                     else if (record.feature.equals("exon"))       // not really necessary, but don't want to chance a random feature name from getting input
+                        isoform.exons.add(record);
+                     isoform.direction = direction;
+                     isoform.records.add(record);
+                  }
                }
-               // there is no else needed because the current isoform is still current (tautological?)
-               
-               Record record = new Record(feature, startRec, stopRec, direction, isoName);
-//               System.out.println(record.isoform + " " + record.feature);
-               record.genData(extractRecordDNA(DNA,record));
-               
-               if (record.feature.equals("start_codon"))
-                  if (direction)
-                     isoform.start = startRec;
-                  else
-                     isoform.stop = stopRec;
-               else if (record.feature.equals("stop_codon"))
-                  if (direction)
-                     isoform.stop = stopRec;
-                  else
-                     isoform.start = startRec;
-               else if (record.feature.equals("exon"))       // not really necessary, but don't want to chance a random feature name from getting input
-                  isoform.exons.add(record);
-               isoform.direction = direction;
-               isoform.records.add(record);
             }
-            isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
-//            System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
-            calcUpsData(isoform, upstream);
-            isoforms.add(isoform); // after we finish parsing GFF file, we should still have one isoform left to add to array list
-            
+            if (!isoform.name.equals("")) {
+               if (isoform.start >= 0 && isoform.stop >=0) {
+                  isoform.runAllDataCalc(extractGeneDNA(DNA,isoform));
+   //             System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
+                  calcUpsData(isoform, upstream);
+                  isoforms.add(isoform); // after we finish parsing GFF file, we should still have one isoform left to add to array list
+               }
+            }
             genData(DNA);
             calcNests();
             calcIntergenic();
@@ -186,15 +196,15 @@ public class GeneDensity {
             geneData[5] += isoform.intronLength;
             geneData[6] += isoform.length;
             
-            printerIso.println(isoform.name+","+isoform.CDScount+","+isoform.CDSlength+","+isoform.exonCount+","+isoform.exonLength+","+isoform.intronCount+","+isoform.intronLength+","+isoform.length);
+            printerIso.println(isoform.name.substring(0,isoform.name.indexOf('-'))+","+isoform.CDScount+","+isoform.CDSlength+","+isoform.exonCount+","+isoform.exonLength+","+isoform.intronCount+","+isoform.intronLength+","+isoform.length);
          }
-         printerGen.println("Exons,"+exon[0]+","+exon[1]+","+100.0*exon[2]/exon[1]+","+100.0*exon[3]/exon[1]+","+100*exon[4]/exon[1]+","+100*exon[5]/exon[1]+","+100*exon[6]/exon[1]+","+100*exon[7]/exon[1]);
-         printerGen.println("CDS,"+cds[0]+","+cds[1]+","+100*cds[2]/cds[1]+","+100*cds[3]/cds[1]+","+100*cds[4]/cds[1]+","+100*cds[5]/cds[1]+","+100*cds[6]/cds[1]+","+100*cds[7]/cds[1]);
-         printerGen.println("Intron,"+intron[0]+","+intron[1]+","+100*intron[2]/intron[1]+","+100*intron[3]/intron[1]+","+100*intron[4]/intron[1]+","+100*intron[5]/intron[1]+","+100*intron[6]/intron[1]+","+100*intron[7]/intron[1]);
-         printerGen.println("Intergenic Regions,"+igCount+","+igLength+","+100*igA/igLength+","+100*igT/igLength+","+100*igG/igLength+","+100*igC/igLength+","+100*igGC/igLength+","+100*igN/igLength);
-         printerGen.println("Genes,"+gene[0]+","+gene[1]+","+100*gene[2]/gene[1]+","+100*gene[3]/gene[1]+","+100*gene[4]/gene[1]+","+100*gene[5]/gene[1]+","+100*gene[6]/gene[1]+","+100*gene[7]/gene[1]);
-         printerGen.println("Upstream (" + upstream + " b),"+upsCount+","+upsLength+","+100*upsA/upsLength+","+100*upsT/upsLength+","+100*upsG/upsLength+","+100*upsC/upsLength+","+100*upsGC/upsLength+","+100*upsN/upsLength);
-         printerGen.println("Nested Genes,"+nestCount+","+nestLength+","+100*nestA/nestLength+","+100*nestT/nestLength+","+100*nestG/nestLength+","+100*nestC/nestLength+","+100*nestGC/nestLength+","+100*nestN/nestLength);
+         printerGen.println("Exons,"+exon[0]+","+exon[1]+","+100.0*exon[2]/exon[1]+","+100.0*exon[3]/exon[1]+","+100.0*exon[4]/exon[1]+","+100.0*exon[5]/exon[1]+","+100.0*exon[6]/exon[1]+","+100.0*exon[7]/exon[1]);
+         printerGen.println("CDS,"+cds[0]+","+cds[1]+","+100.0*cds[2]/cds[1]+","+100.0*cds[3]/cds[1]+","+100.0*cds[4]/cds[1]+","+100.0*cds[5]/cds[1]+","+100.0*cds[6]/cds[1]+","+100.0*cds[7]/cds[1]);
+         printerGen.println("Intron,"+intron[0]+","+intron[1]+","+100.0*intron[2]/intron[1]+","+100.0*intron[3]/intron[1]+","+100.0*intron[4]/intron[1]+","+100.0*intron[5]/intron[1]+","+100.0*intron[6]/intron[1]+","+100.0*intron[7]/intron[1]);
+         printerGen.println("Intergenic Regions,"+igCount+","+igLength+","+100.0*igA/igLength+","+100.0*igT/igLength+","+100.0*igG/igLength+","+100.0*igC/igLength+","+100.0*igGC/igLength+","+100.0*igN/igLength);
+         printerGen.println("Genes,"+gene[0]+","+gene[1]+","+100.0*gene[2]/gene[1]+","+100.0*gene[3]/gene[1]+","+100.0*gene[4]/gene[1]+","+100.0*gene[5]/gene[1]+","+100.0*gene[6]/gene[1]+","+100.0*gene[7]/gene[1]);
+         printerGen.println("Upstream (" + upstream + " b),"+upsCount+","+upsLength+","+100.0*upsA/upsLength+","+100.0*upsT/upsLength+","+100.0*upsG/upsLength+","+100.0*upsC/upsLength+","+100.0*upsGC/upsLength+","+100.0*upsN/upsLength);
+         printerGen.println("Nested Genes,"+nestCount+","+nestLength+","+100.0*nestA/nestLength+","+100.0*nestT/nestLength+","+100.0*nestG/nestLength+","+100.0*nestC/nestLength+","+100.0*nestGC/nestLength+","+100.0*nestN/nestLength);
          printerGen.close();
          for (int i = 0; i < 7; i++)
             geneData[i] = 1.0*geneData[i]/isoforms.size();
@@ -281,6 +291,8 @@ public class GeneDensity {
             revCom += 'C';
          else if (reverse[i] == 'C')
             revCom += 'G';
+         else if (reverse[i] == 'N')
+            revCom += 'N';
       }
       return revCom;
    }
@@ -395,6 +407,7 @@ public class GeneDensity {
       // need to sort Isoforms from lowest to highest and look at the gaps between neighbors.
       // this function is going to pretend that overlaps don't happen, so stop is between another's start and stop, we ignore it.
       // ignore the previous line....if there is an overlap, we would be able to fix that by adding in the nested regions
+      boolean isoStart = false, isoStop = false;
       if (!isoformSorted)
          sortIsoforms();
       
@@ -405,9 +418,12 @@ public class GeneDensity {
       igC = numC;
       igGC = numGC;
       igN = numN;
-      igCount = isoforms.size()+1; // there is a good chance that this logic is correct. if we really want to be accurate and test all cases, we should have two booleans in the main to verify start and stop location
 
       for(Isoform iso: isoforms) {
+         if (iso.start == 0)
+            isoStart = true;
+         else if (iso.stop == DNA.length())
+            isoStop = true;
          igLength -= iso.length;
          igA -= iso.numA;
          igT -= iso.numT;
@@ -416,7 +432,14 @@ public class GeneDensity {
          igGC -= iso.numGC;
          igN -= iso.numN;
       }
-      
+      // start && stop == true: igCount = isoforms.size()-1;
+      // !(start&&stop) == true: igCount = isoforms.size()+1;
+      // else: igCount = isoforms.size();
+      igCount = isoforms.size();
+      if (isoStart && isoStop)
+         igCount--;
+      else if(!(isoStart && isoStop))
+         igCount++;
    }
    
    public static void sortIsoforms() {
@@ -463,7 +486,6 @@ class Isoform implements Comparable<Isoform>{
    public void calcIntronData() {
       if (!exonSorted)
          sortExons();
-      
       intron[0] = intronCount = exons.size()-1;
       intron[1] = length;
       intron[2] = numA;
@@ -472,8 +494,7 @@ class Isoform implements Comparable<Isoform>{
       intron[5] = numC;
       intron[6] = numGC;
       intron[7] = numN;
-
-      for(Record exon: records) {
+      for(Record exon: exons) {
          intron[1] -= exon.length;
          intron[2] -= exon.numA;
          intron[3] -= exon.numT;
