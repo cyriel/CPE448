@@ -1,0 +1,22 @@
+Lab 4:
+parse the fasta file and create data like lab 3
+
+Need to create:
+   inIsoform(DNAFrag frag) in main class        // locates which isoform the sequence is in
+   whichRecords(DNAFrag frag) in Isoform class  // returns which introns/exons the sequence is contained in.
+   nucleoCompo(string dna) in main class        // nucleotide composition: num A/T/C/G
+   skip() in main class                         //checks if a substring has n in it. return true if n is found, false otherwise
+   genString() in main class                    // see ~/test.java for a working generator
+
+output:
+   nucleotide composition of repeated sequence
+   coordinates of repeated sequence (start, stop)
+   number of repeated sequences that occur
+   display location of repeated sequence (intergenic, gene[intron/exon])
+      if in intron/exon, report what number the intron/exon is in the list
+      // go through the exon array list. If we pass the repeated sequence, it's in an intron at the number of the increment (for bio purposes)
+      // If we find the repeated sequence in an exon, it's the number of the increment + 1 (for bio purposes)
+      // if the repeated sequence starts before an exon value, but goes through or ends in an exon, report intron, exon, and possible followings
+      // we would need a start and stop boolean to facilitate accurate searching. start is when we find the proper start location and we push values into a return array list. stop is when we find the proper stop location and we finish the search and return the array list.
+      // the arraylist should contain strings as "[intron|exon] #"
+
