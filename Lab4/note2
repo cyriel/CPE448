@@ -23,7 +23,7 @@ class Node {
     */
    
    // GET REPeating SUBSTRing
-   public ArrayList<StrnCnt> getMaxRepStr(Node node) {
+   public ArrayList<StrnCnt> getMaxRepStr() {
       ArrayList<StrnCnt> ret = new ArrayList<StrnCnt>();
       
       
@@ -32,13 +32,13 @@ class Node {
 
       // gets substring and count from each child
       if (hasChildA())
-         ret.addAll(getMaxRepStr(childA));
+         ret.addAll(childA.getMaxRepStr());
       if (hasChildT())
-         ret.addAll(getMaxRepStr(childT));
+         ret.addAll(childT.getMaxRepStr());
       if (hasChildG())
-         ret.addAll(getMaxRepStr(childG));
+         ret.addAll(childG.getMaxRepStr());
       if (hasChildC())
-         ret.addAll(getMaxRepStr(childC));
+         ret.addAll(childC.getMaxRepStr());
       
       // if all children are leafs, they added nothing to the ArrayList
       // therefore the current node is not a leaf and is the longest substring here
@@ -53,7 +53,7 @@ final class StrnCnt {
    final String str;
    final int count;
    
-   public Strnlen(String str, int count) {
+   public StrnCnt(String str, int count) {
       this.str = str;
       this.count = count;
    }
