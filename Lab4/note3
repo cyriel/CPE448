@@ -1,0 +1,38 @@
+improving the niave suffix tree algorithm
+
+take string and toss it into suffix tree, arranging by first letter (reduces unnecessary nodes)
+keep adding until the node already exists, requiring a "shatter" function to break the node off at it's different letter, forming a joint
+add the remaining portion of the string to the new node at the new joint
+
+Node parameters:
+   Node prefix // what the parents have joined together
+   String root // what the node has
+   Node suffixA, suffixT, suffixG, sufixC // what the children have/are separated by starting letter of the suffix
+
+Suffix Tree:
+   genST(Node node, String str, int start)
+   
+Types of shattering:
+   Shatter with new node formed
+   Shatter without new node formed
+
+Both types of shattering will cause an update of visits to the current node
+   
+example: banana
+
+banana
+anana
+nana
+ana
+na
+
+banana
+      X
+ana
+   na
+      X
+   X
+na
+   na
+      X
+   X

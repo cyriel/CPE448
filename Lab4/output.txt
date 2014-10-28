@@ -1,0 +1,14 @@
+Total %N = 26.92
+Total sequences checked = 65282
+Total sequences checked without N = 65277
+            Sequence        # of Repeats         Probability
+            TTTTTTTT                 465          1.00000000
+            AAAAAAAA                 327          1.00000000
+            TTTATTTT                 292          0.10937500
+            ATTTTTTT                 291          0.10937500
+            ATTTATTT                 264          0.18750000
+            TTATTTTT                 261          0.10937500
+            AAATGTTT                 248          0.02343750
+            AAATATTT                 229          0.25000000
+            AATATTTT                 228          0.23437500
+            CAGCAGCA                 226          0.03515625
