@@ -2,8 +2,82 @@ import java.util.*;
 import java.io.*;
 
 public class RepeatFinder {
-   static int start = 1, end = -1;
+   static int start = 1, end = -1, length;
+   static double probA, probT, probG, probC, probN;
+   static int[] limit = new int[3]; // if limit = 0, we ignore it
+   
+//   public static boolean passThreshold(String str, int limit) {
+//      int cur = 0;
+//      for (int i = 0; i < str.length()-1; i++)
+//         if (str.charAt(i) == str.charAt(i+1)) {
+//            if (++cur == limit)
+//               return true;
+//         } else
+//            cur = 0;
+//      return false;
+//   }
+   
+   public static boolean passThreshold(String str) {
+      ArrayList<String> list = new ArrayList<String>();
+      for (int i = 0; i < str.length(); i++) {
+//         if (i+2 < str.length())
+//            System.out.println(str.charAt(i) + "\t" + str.substring(i, i+2) + "\t" + str.substring(i,i+3));
+//         else if (i+1 < str.length())
+//            System.out.println(str.charAt(i) + "\t" + str.substring(i, i+2));
+//         else
+//            System.out.println(str.charAt(i));
+         list.add("" + str.charAt(i));
+         if (i+1 < str.length()) {
+            list.add(str.substring(i,i+2));
+            if (i+2 < str.length())
+               list.add(str.substring(i,i+3));
+         }
+      }
+      
+      Set<String> unique = new HashSet<String>(list);
+      for(String cmp: unique) {
+         if (Collections.frequency(list,cmp) > 1) {
+//            System.out.println(cmp);
+            int size = cmp.length();
+            if (limit[size-1] != 0)
+               if (numAdjacentThreshold(str, cmp, limit[size-1]))
+                  return true;
+            else if (size > 3 || size < 1) {
+               System.err.println("I messed up somewhere: " + size);
+               System.exit(-1);
+            }
+         }
+      }
+      return false;
+   }
 
+   private static boolean numAdjacentThreshold(String str, String cmp, int limit) {
+      int start = str.indexOf(cmp);    // start at first match
+      int count = 1;
+      int last = 0;
+
+      int temp = str.indexOf(cmp,start+cmp.length());
+      while (temp != -1) {
+         if (start + cmp.length() != temp)
+            count = 1;
+         else
+            if (++count > limit)
+               return true;
+         start = temp;
+         temp = str.indexOf(cmp,start+cmp.length());      // jump to next match
+      }
+      return false;
+   }
+   
+   public static void genData(String dna) {
+      length = dna.length();
+      probA = 1.0*(length - dna.replace("A", "").length())/length;
+      probT = 1.0*(length - dna.replace("T", "").length())/length;
+      probG = 1.0*(length - dna.replace("G", "").length())/length;
+      probC = 1.0*(length - dna.replace("C", "").length())/length;
+      probN = 1.0*(length - dna.replace("N", "").length())/length;
+   }
+   
    public static ArrayList<String> crop(ArrayList<StrCntVst> list, int size) {
       ArrayList<String> ret = new ArrayList<String>();
       for (StrCntVst scv: list)
@@ -21,27 +95,24 @@ public class RepeatFinder {
    }
    
    public static double probability(String str) {
-      double length = str.length();
+      int length = str.length();
       double prob = 1.0;
       int temp;
-      temp = str.replace("A", "").length();
-      if (temp != length)
-         prob *= (length - temp)/length;
-      temp = str.replace("T", "").length();
-      if (temp != length)
-         prob *= (length - temp)/length;
-      temp = str.replace("G", "").length();
-      if (temp != length)
-         prob *= (length - temp)/length;
-      temp = str.replace("C", "").length();
-      if (temp != length)
-         prob *= (length - temp)/length;
+      temp = length - str.replace("A", "").length();
+      for (int i = 0; i < temp; i++)
+         prob *= probA;
+      temp = length - str.replace("T", "").length();
+      for (int i = 0; i < temp; i++)
+         prob *= probT;
+      temp = length - str.replace("G", "").length();
+      for (int i = 0; i < temp; i++)
+         prob *= probG;
+      temp = length - str.replace("C", "").length();
+      for (int i = 0; i < temp; i++)
+         prob *= probC;
       return  prob;
    }
    
-   public static double percentN(String str) {
-      return 100.0*(str.length() - str.replace("A", "").length())/str.length();
-   }
    
    public static void main2(String[] args) {
       SuffixTree2 tree = new SuffixTree2("GANANA", 3);
@@ -70,6 +141,9 @@ public class RepeatFinder {
          parser = new Scanner(new File(config));
          String fastafile = parser.nextLine();
          int sequenceSize = parser.nextInt();
+         limit[0] = parser.nextInt();
+         limit[1] = parser.nextInt();
+         limit[2] = parser.nextInt();
          if (parser.hasNextInt()) {
             start = parser.nextInt();
             if (parser.hasNextInt())
@@ -87,6 +161,7 @@ public class RepeatFinder {
             if (end == -1)
                end = dna.length();
             String frag = dna.substring(start,end);
+            genData(frag);
             // this is where the magic needs to happen
             
             SuffixTree2 tree = new SuffixTree2(frag, sequenceSize);
@@ -111,33 +186,58 @@ public class RepeatFinder {
             
             File txtOut = new File("output.txt");
             File csvOut = new File("output.csv");
+            File csvReject = new File("reject.csv");
             try {
-               double percentN = percentN(frag);
-               
                txtOut.createNewFile();
                csvOut.createNewFile();
+               csvReject.createNewFile();
                PrintWriter txtPrinter = new PrintWriter(new FileWriter(txtOut));
                PrintWriter csvPrinter = new PrintWriter(new FileWriter(csvOut));
+               PrintWriter csvrPrinter = new PrintWriter(new FileWriter(csvReject));
                
-               txtPrinter.println("Total %N = " + String.format("%.2f", percentN));
-               csvPrinter.println("Total %N =," + percentN);
+               txtPrinter.println("Total %A = " + String.format("%.2f", 100*probA));
+               csvPrinter.println("Total %A =," + 100*probA);
+               csvrPrinter.println("Total %A =," + 100*probA);
+               txtPrinter.println("Total %T = " + String.format("%.2f", 100*probT));
+               csvPrinter.println("Total %T =," + 100*probT);
+               csvrPrinter.println("Total %T =," + 100*probT);
+               txtPrinter.println("Total %G = " + String.format("%.2f", 100*probG));
+               csvPrinter.println("Total %G =," + 100*probG);
+               csvrPrinter.println("Total %G =," + 100*probG);
+               txtPrinter.println("Total %C = " + String.format("%.2f", 100*probC));
+               csvPrinter.println("Total %C =," + 100*probC);
+               csvrPrinter.println("Total %C =," + 100*probC);
+               txtPrinter.println("Total %N = " + String.format("%.2f", 100*probN));
+               csvPrinter.println("Total %N =," + 100*probN);
+               csvrPrinter.println("Total %N =," + 100*probN);
                txtPrinter.println("Total sequences checked = " + shortened.size());
                csvPrinter.println("Total sequences checked =," + shortened.size());
+               csvrPrinter.println("Total sequences checked =," + shortened.size());
                txtPrinter.println("Total sequences checked without N = " + removedN.size());
                csvPrinter.println("Total sequences checked without N =," + removedN.size());
+               csvrPrinter.println("Total sequences checked without N =," + removedN.size());
                
                txtPrinter.println(String.format("%20s%20s%20s","Sequence", "# of Repeats", "Probability"));
                csvPrinter.println("Sequence,# of Repeats,Probability");
-               int ndx;
-               for (ndx = 0; ndx < out.size(); ndx++) {
-                  StrCntVst scv = out.get(ndx);
-                  if (ndx < 10)
-                     txtPrinter.println(String.format("%20s%20d%20.8f",scv.string, scv.count, probability(scv.string)));
-                  csvPrinter.println(scv.string + "," + scv.count + "," + probability(scv.string));
+               csvrPrinter.println("Sequence,# of Repeats,Probability");
+               int count = 0;
+               for (int i = 0; i < out.size(); i++) {
+                  StrCntVst scv = out.get(i);
+                  
+                  if (passThreshold(scv.string))
+                     csvrPrinter.println(scv.string + "," + scv.count + "," + probability(scv.string));
+                  else {
+                     csvPrinter.println(scv.string + "," + scv.count + "," + probability(scv.string));
+                     if (count < 10) {
+                        txtPrinter.println(String.format("%20s%20d%20.8f",scv.string, scv.count, probability(scv.string)));
+                        count++;
+                     }
+                  }
                }
                
                txtPrinter.close();
                csvPrinter.close();
+               csvrPrinter.close();
             } catch (IOException e) {
                System.err.println("IO error occured");
             }

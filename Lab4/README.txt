@@ -15,6 +15,7 @@ Instructions:
 Config File description:
 FASTA file name including extention (for example dna.fasta)
 Sequence Size
+Max number of adjacent duplicates allowed: 1 nucleotide, 2 nucleotides, 3 nucleotides
 start index*
 end index*
 
