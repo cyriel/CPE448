@@ -1,3 +1,7 @@
-Dere3L1_FASTA.txt
-Dere3L1_gtf.txt
-1000
+FASTA file name = Dere3L1_FASTA.txt
+GFF file name = Dere3L1_gtf.txt
+Upstream length = 1000
+Motif = MRVATTB
+Match score = 3
+Mismatch score = -3
+Cutoff score = 0

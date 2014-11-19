@@ -2,8 +2,8 @@ import java.util.*;
 import java.io.*;
 
 public class MotifMatching {
-   static HashMap<Character, char[]> ref = new HashMap<Character, char[]>();
-   static String motif, DNA = "";
+   static HashMap<Character, String> ref = new HashMap<Character, String>();
+   static String fastafile, gfffile, motif, DNA = "";
    static ArrayList<Isoform> isoforms = new ArrayList<Isoform>();
    static ArrayList<DNAFrag> ups = new ArrayList<DNAFrag>();
    static ArrayList<Output> output = new ArrayList<Output>();
@@ -12,30 +12,31 @@ public class MotifMatching {
    
    public static void hashInit() {
       ref.clear();
-      ref.put('A',new char[]{'A'});
-      ref.put('T',new char[]{'T'});
-      ref.put('G',new char[]{'G'});
-      ref.put('C',new char[]{'C'});
-      ref.put('R',new char[]{'A','G'});
-      ref.put('Y',new char[]{'C','T'});
-      ref.put('W',new char[]{'A','T'});
-      ref.put('S',new char[]{'C','G'});
-      ref.put('M',new char[]{'A','C'});
-      ref.put('K',new char[]{'G','T'});
-      ref.put('H',new char[]{'A','C','T'});
-      ref.put('B',new char[]{'C','G','T'});
-      ref.put('V',new char[]{'A','C','G'});
-      ref.put('D',new char[]{'A','G','T'});
-      ref.put('N',new char[]{'A','C','G','T'});
+      ref.put('A',"A");
+      ref.put('T',"T");
+      ref.put('G',"G");
+      ref.put('C',"C");
+      ref.put('R',"AG");
+      ref.put('Y',"CT");
+      ref.put('W',"AT");
+      ref.put('S',"CG");
+      ref.put('M',"AC");
+      ref.put('K',"GT");
+      ref.put('H',"ACT");
+      ref.put('B',"CGT");
+      ref.put('V',"ACG");
+      ref.put('D',"AGT");
+      ref.put('N',"ACGT");
    }
 
    // Assuming we parsed dna to be the same length as motif
    // In the chance that it isn't, we will kill the program
    // I wish we could run fork bombs in languages like Java
+   // Never say fork bomb on an airplane
    public static int score(String dna) {
       int score = 0;
       for (int i = 0; i < dna.length(); i++)
-         if (ref.get(motif.charAt(i)).contains(dna.charAt(i)))
+         if (ref.get(motif.charAt(i)).indexOf(dna.charAt(i)) != -1)
             score += match;
          else
             score -= miss;
@@ -71,27 +72,47 @@ public class MotifMatching {
       }
    }
    
-   public static void main(String[] args) {
-      String config = "config.txt";
-      Scanner parser;
-      hashInit();
+   public static void parseConfigInput() {
       try {
-
-         String fastafile = parser.nextLine();
-         String gfffile = parser.nextLine();
-         motif = parser.nextLine();
-         match = parser.nextInt();
-         miss = parser.nextInt();
-         cutoff = parser.nextInt();
-         upstream = parser.nextInt();
-         if (parser.hasNextInt()) {
-            start = parser.nextInt();
-            if (parser.hasNextInt())
-               end = parser.nextInt();
-            else
-               start = 1;
-         }
-         start--;
+         Scanner parser = new Scanner(new File("config.txt"));
+         
+         fastafile = parser.nextLine().split("=")[1].trim();
+         gfffile = parser.nextLine().split("=")[1].trim();
+         upstream = Integer.parseInt(parser.nextLine().split("=")[1].trim());
+         motif = parser.nextLine().split("=")[1].trim();
+         match = Integer.parseInt(parser.nextLine().split("=")[1].trim());
+         miss = Integer.parseInt(parser.nextLine().split("=")[1].trim());
+         cutoff = Integer.parseInt(parser.nextLine().split("=")[1].trim());
+         
+         /*
+         System.out.println("FASTA file name = " + fastafile);
+         System.out.println("GFF file name = " + gfffile);
+         System.out.println("Upstream length = " + upstream);
+         System.out.println("Motif = " + motif);
+         System.out.println("Match = " + match);
+         System.out.println("Miss = " + miss);
+         System.out.println("Cutoff = " + cutoff);
+         */
+         
+      } catch(FileNotFoundException e) {
+         System.err.println("Config file not found!");
+         System.exit(-1);
+      } catch(NoSuchElementException ex) {
+         System.err.println("Missing line in config file!");
+         System.exit(-2);
+      } catch(ArrayIndexOutOfBoundsException aioobe) {
+         System.err.println("Missing equals sign in config file!");
+         System.exit(-3);
+      } catch(NumberFormatException nfe) {
+         System.err.println("Invalid number format in one of the config file inputs!");
+         System.exit(-4);
+      }
+   }
+   
+   public static void main(String[] args) {
+      hashInit();
+      parseConfigInput();
+       
          try {
             Scanner fasta = new Scanner(new File(fastafile));
             fasta.nextLine();    // dump that junk line in the fasta file
@@ -108,7 +129,7 @@ public class MotifMatching {
             Isoform isoform = new Isoform();
             while (gff.hasNextLine()) {
                String tempGFF = gff.nextLine();
-               parser = new Scanner(tempGFF);
+               Scanner parser = new Scanner(tempGFF);
                parser.next();
                parser.next();
                String feature = parser.next();
@@ -194,10 +215,6 @@ public class MotifMatching {
          } catch (FileNotFoundException e) {
             System.err.println("Input file not found");
          }
-      } catch (FileNotFoundException e) {
-         System.err.println("Config file not found");
-      }
-      
    }
    
    // need to change this to add to an ups array list
