@@ -8,7 +8,7 @@ public class MotifMatching {
    static ArrayList<DNAFrag> ups = new ArrayList<DNAFrag>();
    static ArrayList<Output> output = new ArrayList<Output>();
    static int match, miss, cutoff = 0;
-   static int start, end, upstream;
+   static int start = 0, end = -1, upstream;
    
    public static void hashInit() {
       ref.clear();
@@ -33,13 +33,14 @@ public class MotifMatching {
    // In the chance that it isn't, we will kill the program
    // I wish we could run fork bombs in languages like Java
    // Never say fork bomb on an airplane
+   // Forks are very dangerous.
    public static int score(String dna) {
       int score = 0;
       for (int i = 0; i < dna.length(); i++)
          if (ref.get(motif.charAt(i)).indexOf(dna.charAt(i)) != -1)
             score += match;
          else
-            score -= miss;
+            score += miss;
       return score;
    }
    
@@ -47,12 +48,12 @@ public class MotifMatching {
       int i, temp;
       ArrayList<Output> output = new ArrayList<Output>();
       
-      for(i = frag.start; i < frag.stop; i = temp) {
+      for(i = frag.start; i+motif.length() < frag.stop; i = temp) {
          temp = i+motif.length();
          String seq = DNA.substring(i, temp);
          int value = score(seq);
          if (value > cutoff)
-            output.add(new Output(frag.iso, seq, value, i+1, temp, start));
+            output.add(new Output(frag.iso, seq, value, i, temp, start));
       }
       
       return output;
@@ -61,7 +62,7 @@ public class MotifMatching {
    public static void purgeDuplicates() {
       for (int i = 0; i < output.size()-1; i++) {
          Output out1 = output.get(i);
-         for (int n = 1; n < output.size(); n++) {
+         for (int n = i+1; n < output.size(); n++) {
             Output out2 = output.get(n);
             // if the start is the same for two outputs, then they have to be the same since the motif is the same
             if (out1.start == out2.start) {
@@ -127,7 +128,9 @@ public class MotifMatching {
             Scanner gff = new Scanner(new File(gfffile));
             
             Isoform isoform = new Isoform();
+//            System.out.println("Done reading FASTA file");
             while (gff.hasNextLine()) {
+               
                String tempGFF = gff.nextLine();
                Scanner parser = new Scanner(tempGFF);
                parser.next();
@@ -150,7 +153,7 @@ public class MotifMatching {
                      if (isoform.start >= 0 && isoform.stop >=0) { // dump isoforms without a start and a stop
                         makeUps(isoform, upstream);
                         isoforms.add(isoform);
-      //                  System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
+//                        System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop);
                      }
                      isoform = new Isoform();
                      isoform.name = isoName;
@@ -178,7 +181,7 @@ public class MotifMatching {
             }
             if (!isoform.name.equals("")) {
                if (isoform.start >= 0 && isoform.stop >=0) {
-   //             System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop + " " + isoform.length);
+//                  System.out.println(isoform.name + " " + isoform.start + " " + isoform.stop);
                   makeUps(isoform, upstream);
                   isoforms.add(isoform); // after we finish parsing GFF file, we should still have one isoform left to add to array list
                }
@@ -232,8 +235,10 @@ public class MotifMatching {
          frag = new DNAFrag(iso.stop, start);
          frag.iso = iso.name;
       }
+//      System.out.println("frag start: " + frag.start + " stop: " + frag.stop);
       frag.searched = search(frag);
-      ups.add(frag);
+      if (!frag.searched.isEmpty())
+         ups.add(frag);
    }
    
    // need a search function to search through the ups data and generate a tuple with gene upstream came from, sequence matched, score, and location of the sequence (start + stop)
@@ -289,9 +294,6 @@ class Output implements Comparable<Output>{
    }
    
    public int compareTo(Output other) {
-      if (start == other.start)
-         return (stop == other.stop) ? 0 : stop - other.stop;
-      else
-         return start - other.start;
+      return (score == other.score) ? 0 : other.score - score;
    }
 }
