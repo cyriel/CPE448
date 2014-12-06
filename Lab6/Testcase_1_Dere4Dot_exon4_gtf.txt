@@ -1,0 +1,9 @@
+scaffold_4512	DereWGS_gep_genes	CDS	6776	7187	1000.000000	+	0	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
+scaffold_4512	DereWGS_gep_genes	exon	6776	7187	1000.000000	+	.	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
+scaffold_4512	DereWGS_gep_genes	CDS	7253	8115	1000.000000	+	2	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
+scaffold_4512	DereWGS_gep_genes	exon	7253	8115	1000.000000	+	.	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
+scaffold_4512	DereWGS_gep_genes	CDS	10128	10728	1000.000000	+	0	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
+scaffold_4512	DereWGS_gep_genes	exon	10128	10728	1000.000000	+	.	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA";  
+scaffold_4512	DereWGS_gep_genes	CDS	11191	11474	1000.000000	+	2	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
+scaffold_4512	DereWGS_gep_genes	stop_codon	11475	11477	1000.000000	+	.	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
+scaffold_4512	DereWGS_gep_genes	exon	11191	11477	1000.000000	+	.	gene_id "Dyrk3-RA"; transcript_id "Dyrk3-RA"; 
